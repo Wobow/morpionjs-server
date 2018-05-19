@@ -62,8 +62,8 @@ Authorization: Bearer MY_TOKEN
 
 | Name | Method | Route | Params |
 |--|--|--|--|
-| Login | POST|/api/auth/login | `{username: string, password: string} `  |
-| Register | POST| /api/auth/register |  `{username: string, password: string} `|
+|Login | POST|/api/auth/login | `{username: string, password: string} `  |
+|Register | POST| /api/auth/register |  `{username: string, password: string} `|
 |List Users | GET|/api/users |-
 |Get User | GET|/api/users/:id |-
 |Update user | PUT|/api/users/:id |  `{username?: string} `
@@ -75,6 +75,8 @@ Authorization: Bearer MY_TOKEN
 |Delete lobby | DELETE|/api/lobbies/:id | 
 |List Games | GET|/api/games |  `{limit?: number, offset?: number}`
 |Get Game | GET|/api/games/:id | 
+|Create Request |POST|/api/request/ |  `{type: string, accessResource: ObjectId}`
+|Get Request | GET|/api/request/:rid |  
 
 
 # Websockets
@@ -134,6 +136,10 @@ Push les événements suivants :
 
 `createGame`: Le user veut créer une partie ouverte
 
+`leaveGame`: Le user quitte la partie
+
+`leaveLobby`: Le user quitte le lobby
+
 ## Format de la request 
 
 ### Envoyer la requête
@@ -144,11 +150,11 @@ Fair un appel sur `POST /request` avec le body suivant :
   accessResource: "ResourceId"
 }
 ```
-Le call renvoie la request créée (avec son id)
+La réponse à la requête est directement envoyée via HTTP
 
 ### Recevoir la réponse
 
-Dans la **websocket de ton user** tu vas recevoir la réponse à la Request quand elle sera traitée (y'a une queue côté serveur)
+Dans la **réponse à la requête** tu vas recevoir un objet.
 - Soit elle a un `status: 'rejected'` et du coup tu peux afficher un message d'erreur comme quoi la requête associé à fail
 - Soit elle a un `status: 'ok'` et tu peux interpréter le message 
 
@@ -167,7 +173,7 @@ Une reponse ressemble à ça :
 
 (je documenterai les codes de retour sur le fil)
 
-En gros, si dans tes sockets tu reçois une requête de type 'joinLobby' avec le statut 'ok', ça veut dire que tu as rejoins un lobby.
+En gros, si ta request de type 'joinLobby' revient avec le statut 'ok', ça veut dire que tu as rejoins un lobby.
 Donc si tu fais 
 
 - GET /lobbies/{LobbyId}/members
@@ -178,16 +184,7 @@ Tu vas voir que tu es dans la liste des users du lobby, et quand tu feras le get
 
 ## Se connecter à sa socket
 
-* Se connecter au serveur de websocket:&nbsp;  `ws://${serverURL}`
-* Envoyer un message sur le serveur de websocket avec le contenu suivant :
-
-```javascript
-{
-  "userId": "idDuUser"
-}
-```
-
-Le serveur répond `ok` quand vous êtes connectés à la socket.
+// En cours de chantier. socket.io sera utilisé
 
 ## Rejoindre un Lobby
 
@@ -203,7 +200,7 @@ Le serveur répond `ok` quand vous êtes connectés à la socket.
 |type|`'joinLobby'`| L'action a performer
 |accessResource|`5adcb42580876a5beecb943f`| L'id du lobby à rejoindre
 
-2. Attendre la réponse sur sa socket. Les sockets envoient la réponse suivante :
+2. Attendre la réponse :
 
 ```javascript
 {
@@ -231,7 +228,7 @@ Le serveur répond `ok` quand vous êtes connectés à la socket.
 |type|`'createGame'`| L'action a performer
 |accessResource|`5adcb42580876a5beecb943f`| Le lobby dans lequel créer la game
 
-2. Attendre la réponse sur sa socket.  Les sockets envoient la réponse suivante :
+2. Attendre la réponse
 
 ```javascript
 {
@@ -259,7 +256,7 @@ Le serveur répond `ok` quand vous êtes connectés à la socket.
 |type|`'joinGame'`| L'action a performer
 |accessResource|`5adcb42580876a5beecb943f`| L'id de la game à rejoindre
 
-2. Attendre la réponse sur sa socket.  Les sockets envoient la réponse suivante :
+2. Attendre la réponse
 
 ```javascript
 {
@@ -275,23 +272,54 @@ Le serveur répond `ok` quand vous êtes connectés à la socket.
 
 ## Quitter une game
 
-Il suffit de mettre à jour son profil user avec `'game': undefined` pour quitter la game.
 
-`PUT /api/users/{id}`
+1. Envoyer une requête pour quitter la game:
 
-|body|value
-|-|-|
-|game|`undefined`
+`POST /api/requests`
+
+|body|value|description
+|-|-|-|
+|type|`'leaveGame'`| L'action a performer
+|accessResource|`5adcb42580876a5beecb943f`| L'id du user
+
+2. Attendre la réponse
+
+```javascript
+{
+  requestId: '5adcb45580876a5beecb9440',
+  message: 'Game left',
+  statusCode: 103,
+  status: 'ok',
+  resourceURI: null,
+  time: 123454654161,
+  type: 'game'
+}
+```
 
 ## Quitter un lobby
 
-Il suffit de mettre à jour son profil user avec `'lobby': undefined` pour quitter la game.
+1. Envoyer une requête pour quitter le lobby:
 
-`PUT /api/users/{id}`
+`POST /api/requests`
 
-|body|value
-|-|-|
-|lobby|`undefined`
+|body|value|description
+|-|-|-|
+|type|`'leaveGame'`| L'action a performer
+|accessResource|`5adcb42580876a5beecb943f`| L'id du user
+
+2. Attendre la réponse
+
+```javascript
+{
+  requestId: '5adcb45580876a5beecb9440',
+  message: 'Lobby left',
+  statusCode: 102,
+  status: 'ok',
+  resourceURI: null,
+  time: 123454654161,
+  type: 'lobby'
+}
+```
 
 # Codes des sockets
 
@@ -299,6 +327,8 @@ Il suffit de mettre à jour son profil user avec `'lobby': undefined` pour quitt
 |statusCode|status|message|resource associée|détails
 |-|-|-|-|-|
 |`101`| `ok`| Lobby joined|URI du lobby joint
+|`102`| `ok`| Lobby left| -
+|`102`| `ok`| Game left|-
 |`301`| `ok`| Game created|URI de la partie créée
 |`302`| `ok`| Game joined|URI de la partie rejoint
 
