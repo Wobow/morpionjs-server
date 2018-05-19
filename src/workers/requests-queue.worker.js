@@ -44,6 +44,10 @@ export default {
       return RequestBean.createGame(request);
       case 'joinGame':
       return RequestBean.joinGame(request);
+      case 'leaveLobby':
+      return RequestBean.leaveLobby(request);
+      case 'leaveGame':
+      return RequestBean.leaveGame(request);
       default:
       return helpers.wrapInPromise(RequestBean.throwError('rejected', 'Unknown request type', request));
     }

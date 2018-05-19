@@ -6,11 +6,11 @@ import requestQueue from '../workers/requests-queue.worker';
 import Lobby from '../models/lobbies';
 import User from '../models/users';
 import Game from '../models/games';
-import SocketWorker, { USER_JOINED_GAME, USER_JOINED_LOBBY, USER_CREATED_GAME } from '../workers/web-sockets.worker';
+import SocketWorker, { USER_JOINED_GAME, USER_JOINED_LOBBY, USER_LEFT_GAME, USER_LEFT_LOBBY, USER_CREATED_GAME } from '../workers/web-sockets.worker';
 
 export default {
 
-  allowedTypes: ['joinGame', 'createGame', 'joinLobby', 'invitePlayer'],
+  allowedTypes: ['joinGame', 'createGame', 'joinLobby', 'invitePlayer', 'leaveGame', 'leaveLobby'],
   /**
    * Verifies if a request type is valid
    * @param {string} type the type to check
@@ -27,17 +27,52 @@ export default {
    * @returns {Promise} The response to the request
    */
   treatRequest(request) {
-    return new Promise((resolve, reject) => {
-      if (request.status !== 'submitted') {
-        reject(new RequestResponse(request._id, 'REQUEST_ALREADY_TREATED', 1));
-      }
-      requestQueue.push(request);
-      resolve(request);
-    });
+    if (request.status !== 'submitted') {
+      reject(new RequestResponse(request._id, 'REQUEST_ALREADY_TREATED', 1));
+    }
+    return requestQueue.treat(request);
   },
 
   throwError(requestId, errorMessage, statusCode, status, resourceURI) {
     return new RequestResponse(requestId, errorMessage, statusCode, status, resourceURI);
+  },
+
+  async leaveLobby(request) {
+    try {
+      const user = await User.findById(request.author);
+      if (!user) {
+        return this.throwError(request._id, 'User not found', 1201, 'rejected', null);
+      }
+      if (!user.lobby) {
+        return this.throwError(request._id, 'User is not in any lobby', 1204, null);
+      }
+      SocketWorker.notifyLobby(user.lobby, USER_LEFT_LOBBY(user, user.lobby));
+      user.lobby = undefined;
+      await user.save();
+      return new RequestResponse(request._id, 'Lobby left', 102, 'ok', null);
+    } catch (err) {
+      console.error(err);
+      return this.throwError(request._id, 'Internal Server Error', 1001, 'rejected', null);
+    }
+  },
+
+  async leaveGame(request) {
+    try {
+      const user = await User.findById(request.author);
+      if (!user) {
+        return this.throwError(request._id, 'User not found', 1201, 'rejected', null);
+      }
+      if (!user.game) {
+        return this.throwError(request._id, 'User is not in any game', 1304, null);
+      }
+      SocketWorker.notifyGame(user.lobby, USER_LEFT_GAME(user, user.game));
+      user.game = undefined;
+      await user.save();
+      return new RequestResponse(request._id, 'Game left', 103, 'ok', null);
+    } catch (err) {
+      console.error(err);
+      return this.throwError(request._id, 'Internal Server Error', 1001, 'rejected', null);
+    }
   },
 
   async joinLobby(request) {

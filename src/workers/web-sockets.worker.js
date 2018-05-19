@@ -3,8 +3,10 @@ import _ from 'lodash';
 import User from '../models/users';
 
 export const USER_JOINED_LOBBY = (user, lobbyID) => ({type: 'lobby', action: 'joined', lobbyID, user, time: Date.now()});
+export const USER_LEFT_LOBBY = (user, lobbyID) => ({type: 'lobby', action: 'leave', lobbyID, user, time: Date.now()});
 export const USER_CREATED_GAME = (user, gameID) => ({type: 'game', action: 'created', gameID, user, time: Date.now()});
 export const USER_JOINED_GAME = (user, gameID) => ({type: 'game', action: 'joined', gameID, user, time: Date.now()});
+export const USER_LEFT_GAME = (user, gameID) => ({type: 'game', action: 'leave', gameID, user, time: Date.now()});
 
 export default {
 
