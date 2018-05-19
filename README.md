@@ -3,10 +3,6 @@
 * [API](#api)
   * [Authentification](#authentication)
   * [Routes](#routes)
-* [Websockets](#websockets)
-  * [Type 'user'](#websocket-de-type-user)
-  * [Type 'lobby'](#websocket-de-type-lobby-)
-  * [Type 'game'](#websocket-de-type-game)
 * [Requests](#requests) 
   * [Types de requêtes](#types-de-request)
   * [Format de la requête](#format-de-la-request)
@@ -26,6 +22,7 @@
   * [Erreurs liées au Lobby](#erreurs-liées-au-lobby)
   * [Erreurs liées au User](#erreurs-liées-au-user)
   * [Erreurs liées a une Game](#erreurs-liées-a-la-game)
+* [Websockets](#websockets)
 
 # API
 
@@ -78,51 +75,6 @@ Authorization: Bearer MY_TOKEN
 |Create Request |POST|/api/request/ |  `{type: string, accessResource: ObjectId}`
 |Get Request | GET|/api/request/:rid |  
 
-
-# Websockets
-
-## Websocket de type 'user' 
-
-**Reçues uniquement après l'envoi d'une requête**
-
-Elle te push les événements suivants :
-- Mise à jour du profil
-- Tu as rejoins une room
-- Tu as quitté une room
-- Tu as été kick d'une room
-- Tu as créé une room
-- Tu as rejoins une game
-- Tu as terminé une game
-- Tu as reçu une réponse à une requête
-
-## Websocket de type 'lobby' :
-
-**Reçues uniquement si le user est dans un lobby**
-
-Push les événements suivants :
-- Un joueur a rejoint le lobby
-- Un joueur a quitté le lobby
-- Un joueur en a invité un autre à jouer
-- Un joueur a accepté une invitation
-- Une partie vient de commencer
-- Une partie vient de se terminer
-- Une partie ouverte vient d'être créée (peut être rejointe par n'importe qui)
-- Le lobby vient d'être créé
-- Le lobby vient d'être détruit
-
-## Websocket de type 'game'
-
-**Reçues uniquement si le user est dans une game**
-
-- La game vient d'être créée
-- Un joueur a rejoint la game
-- Un joueur a quitté la game
-- Un spectateur a rejoint la partie
-- Un spectateur est parti
-- Un joueur vient de jouer un coup
-- La partie est terminée
-- Une nouvelle partie vient d'être lancée
-- La game a été détruite
 
 # Requests
 
@@ -359,6 +311,84 @@ Tu vas voir que tu es dans la liste des users du lobby, et quand tu feras le get
 |`1302`| `rejected`| Game has already started| -|La partie a déjà commencé
 |`1303`| `rejected`| Game is already full| -|La partie est pleine
 
+
+# Websockets
+
+Les websockets sont utilisées pour jouer à une partie.
+Il faut utiliser socket.io
+
+## Subscribe à une game
+
+N'importe qui peut subscribe à la socket d'une game pour voir ce qu'il s'y passe. Sont référencés :
+- Les tours de jeu
+- Les connexions/déconnexions des joueurs à cette room
+- Le status de la partie (winner/draw)
+
+Pour rejoindre une game :
+```javascript
+const io = require('socket.io')(API_URI);
+io.connect();
+io.emit('joinGame', {
+  gameID: 'GAME_ID'
+});
+
+io.on('message', (message) => {
+ // Handle socket messages
+ // {message: 'MESSAGE', data: Game, finished: Boolean}
+});
+
+io.on('error', (error) => {
+  // Handle error message
+  // {message: 'MESSAGE', stack: Object}
+});
+
+io.on('turn', (turn) => {
+  // Handle turn event 
+  // {message: 'MESSAGE', data: Game}
+});
+```
+
+## Jouer son tour
+
+Chaque joueur de la partie possède un secret qu'il peut récupérer sur la route `GET /api/games/{gameid}`. Le secret est un code à 5 caractères qui lui permet de jouer son tour.
+
+Il doit préciser son secret ainsi que le move qu'il veut effectuer.
+La grille ressemble à ça (dans chaque case, l'id du move correspondant):
+
+![./grid.png](./grid.png)
+
+Pour jouer son tour :
+
+```javascript
+const io = require('socket.io')(API_URI);
+io.connect();
+io.emit('playTurn', {
+  gameID: 'GAME_ID',
+  secret: 'PLAYER_SECRET',
+  move: MOVE_ID
+});
+
+io.on('message', (message) => {
+ // Handle socket messages
+ // {message: 'MESSAGE', data: Game, finished: Boolean}
+});
+
+io.on('error', (error) => {
+  // Handle error message
+  // {message: 'MESSAGE', stack: Object}
+});
+
+io.on('turn', (turn) => {
+  // Handle turn event 
+  // {message: 'MESSAGE', data: Game}
+});
+```
+
+## Fin de partie
+
+Lorsque la partie est terminée, un message indiquand le vainqueur est envoyée sur la socket. Le boolean 'finished' sera à `true`
+
+Il faudra ensuite que les joueurs quittent la partie.
 
 
 

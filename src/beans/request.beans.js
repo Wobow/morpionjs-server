@@ -5,7 +5,7 @@ import APIError from '../error';
 import requestQueue from '../workers/requests-queue.worker';
 import Lobby from '../models/lobbies';
 import User from '../models/users';
-import Game from '../models/games';
+import Game, { generateGameSecret } from '../models/games';
 import SocketWorker, { USER_JOINED_GAME, USER_JOINED_LOBBY, USER_LEFT_GAME, USER_LEFT_LOBBY, USER_CREATED_GAME } from '../workers/web-sockets.worker';
 
 export default {
@@ -67,7 +67,12 @@ export default {
       }
       SocketWorker.notifyGame(user.lobby, USER_LEFT_GAME(user, user.game));
       user.game = undefined;
+      const game = await Game.findById(user.game);
       await user.save();
+      if (game) {
+        game.status = 'ended';
+        await game.save();
+      }
       return new RequestResponse(request._id, 'Game left', 103, 'ok', null);
     } catch (err) {
       console.error(err);
@@ -116,9 +121,10 @@ export default {
       }
       const game = await new Game({
         lobby,
-        players: [user],
+        players: [{ user, secret: generateGameSecret() }],
         status: 'created',
         moves: [],
+        grid: 0
       }).save();
       user.game = game;
       await user.save();
@@ -155,8 +161,12 @@ export default {
       if (user.game) {
         return this.throwError(request._id, 'User is already in a game', 1203, 'rejected', `/api/games/${user.game}`);
       }
-      game.players.push(user);
+      game.players.push({ user, secret: generateGameSecret() });
       user.game = game;
+      if (game.players.length === 2) {
+        game.status = 'started';
+        game.turn = game.players[Math.floor(Math.random() * 2)].user;
+      }
       await game.save();
       await user.save();
       SocketWorker.notifyGame(game._id, USER_JOINED_GAME(user, game._id));

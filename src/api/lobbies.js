@@ -5,7 +5,7 @@ import express from 'express';
 import helpers from '../helpers';
 import Lobby from '../models/lobbies';
 import LobbyBean from '../beans/lobbies.beans';
-import Game from '../models/games';
+import Game, { serializeGames } from '../models/games';
 
 const router = express.Router();
 
@@ -50,7 +50,7 @@ export const lobbies = ({ config, db }) => {
         if (!games) {
           throw new APIError('Lobby not found', null, 404);
         }
-        res.json(games);
+        res.json(serializeGames(games));
       })
       .catch((err) => next(APIError.from(err, 'Could not retrieves games of lobby', 500)));
   });

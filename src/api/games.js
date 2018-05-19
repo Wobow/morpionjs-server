@@ -5,7 +5,7 @@ import express from 'express';
 import helpers from '../helpers';
 import Lobby from '../models/lobbies';
 import LobbyBean from '../beans/lobbies.beans';
-import Game from '../models/games';
+import Game, { serializeGame, serializeGames } from '../models/games';
 
 const router = express.Router();
 
@@ -16,7 +16,7 @@ export const games = ({ config, db }) => {
       .find({})
       .skip(parseInt(req.query.offset) || 0)
       .limit(parseInt(req.query.limit) || 10)
-      .then((games) => res.json(games))
+      .then((games) => res.json(serializeGames(games, req)))
       .catch((err) => next(APIError.from(err, 'Could not retrieves Games', 500)));
   });
 
@@ -28,7 +28,7 @@ export const games = ({ config, db }) => {
         if (!game) {
           throw new APIError('Game not found', null, 404);
         }
-        res.json(game)
+        res.json(serializeGame(game, req))
       })
       .catch((err) => next(APIError.from(err, 'Could not retrieves game', 500)));
   });
