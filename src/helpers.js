@@ -55,7 +55,7 @@ export default {
       if (!lobby) {
         throw new APIError('Lobby not found', null, 404);
       }
-      if (lobby.creator.toString() !== userId) {
+      if (lobby.creator.toString() !== userId.toString()) {
         throw new APIError('Only the owner of the lobby can delete it', null, 403);
       }
       return wrapInPromise(lobby);
