@@ -1,23 +1,17 @@
-import resource from 'resource-router-middleware';
-import User from '../models/users';
-import APIError from '../error';
 import express from 'express';
-import helpers from '../helpers';
-import Lobby from '../models/lobbies';
-import LobbyBean from '../beans/lobbies.beans';
+import APIError from '../error';
 import Game, { serializeGame, serializeGames } from '../models/games';
 
 const router = express.Router();
 
-export const games = ({ config, db }) => {
-  
+export const games = () => {
   router.get('/', (req, res, next) => {
     Game
       .find({})
-      .skip(parseInt(req.query.offset) || 0)
-      .limit(parseInt(req.query.limit) || 10)
-      .then((games) => res.json(serializeGames(games, req)))
-      .catch((err) => next(APIError.from(err, 'Could not retrieves Games', 500)));
+      .skip(parseInt(req.query.offset, 10) || 0)
+      .limit(parseInt(req.query.limit, 10) || 10)
+      .then(loadedGames => res.json(serializeGames(loadedGames, req)))
+      .catch(err => next(APIError.from(err, 'Could not retrieves Games', 500)));
   });
 
   router.get('/:id', (req, res, next) => {
@@ -28,9 +22,9 @@ export const games = ({ config, db }) => {
         if (!game) {
           throw new APIError('Game not found', null, 404);
         }
-        res.json(serializeGame(game, req))
+        res.json(serializeGame(game, req));
       })
-      .catch((err) => next(APIError.from(err, 'Could not retrieves game', 500)));
+      .catch(err => next(APIError.from(err, 'Could not retrieves game', 500)));
   });
 
   return router;

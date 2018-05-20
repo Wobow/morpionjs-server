@@ -16,8 +16,6 @@ export default {
   deleteLobby(user, lobbyId) {
     return helpers
       .userIsCreatorOfLobby(user._id, lobbyId)
-      .then((lobby) => {
-        return Lobby.findByIdAndRemove(lobby._id);
-      });
-  }
-}
+      .then(lobby => Lobby.findByIdAndRemove(lobby._id));
+  },
+};

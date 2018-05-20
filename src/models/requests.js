@@ -6,7 +6,7 @@ const requestSchema = mongoose.Schema({
   type: String,
   response: String,
   status: String,
-  accessResource: mongoose.SchemaTypes.ObjectId
+  accessResource: mongoose.SchemaTypes.ObjectId,
 });
 
 export default mongoose.model('Request', requestSchema);

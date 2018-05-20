@@ -1,27 +1,24 @@
-import resource from 'resource-router-middleware';
-import User from '../models/users';
-import APIError from '../error';
 import express from 'express';
+import APIError from '../error';
 import helpers from '../helpers';
 import Request from '../models/requests';
 import RequestBean from '../beans/request.beans';
 
 const router = express.Router();
 
-export const requests = ({ config, db }) => {
-  
+export const requests = () => {
   router.get('/:rid', (req, res, next) => {
     Request.findOne({
       _id: req.params.id,
-      author: req.user.id
+      author: req.user.id,
     })
-    .then((request) => {
-      if (!request) {
-        throw new APIError('Request not found, or you do not have permission to access', null, 404);
-      }
-      return res.json(request);
-    })
-    .catch((err) => next(APIError.from(err, 'Request not found', 404)))
+      .then((request) => {
+        if (!request) {
+          throw new APIError('Request not found, or you do not have permission to access', null, 404);
+        }
+        return res.json(request);
+      })
+      .catch(err => next(APIError.from(err, 'Request not found', 404)));
   });
 
   router.post('/', (req, res, next) => {
@@ -33,15 +30,13 @@ export const requests = ({ config, db }) => {
     newRequest.status = 'submitted';
     newRequest
       .save()
-      .then((request) => {
-        return RequestBean.treatRequest(request);
-      })
+      .then(request => RequestBean.treatRequest(request))
       .then((response) => {
         res.json(response);
       })
-      .catch((err) => next(APIError.from(err, 'Could not process request', 400)));
+      .catch(err => next(APIError.from(err, 'Could not process request', 400)));
   });
-  
+
   return router;
 };
 

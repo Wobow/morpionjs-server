@@ -1,16 +1,13 @@
-import APIError from "./error";
+import APIError from './error';
 import User from './models/users';
 import Lobby from './models/lobbies';
-import mongoose from "mongoose";
 
-export const wrapInPromise = (value) => {
-  return new Promise((resolve) => resolve(value));
-};
+export const wrapInPromise = value => new Promise(resolve => resolve(value));
 
 export default {
-  wrapInPromise: wrapInPromise,
+  wrapInPromise,
   checkBody: (body, bodyParams) => {
-    bodyParams.forEach(key => {
+    bodyParams.forEach((key) => {
       if (!body[key] || !body[key].length) {
         throw new APIError(`Field '${key}' is missing.`, null, 400);
       }
@@ -25,27 +22,25 @@ export default {
   },
 
   isConnectedUserPermissionHandler: (req, res, next) => {
-    if (req.user._id == req.params.id) return next();
+    if (req.user._id === req.params.id) return next();
     return next(new APIError('Forbidden', 'You cannot perform this action on this resource as it is not yours', 403));
   },
 
-  isNotInLobby: (userId) => {
-    return User
-      .findById(userId)
-      .then((user) => {
-        if (user.lobby) {
-          throw new Error('Already in lobby');
-        }
-        return true;
-      })
-  },
+  isNotInLobby: userId => User
+    .findById(userId)
+    .then((user) => {
+      if (user.lobby) {
+        throw new Error('Already in lobby');
+      }
+      return true;
+    }),
 
   hasNotAlreadyCreatedLobby: (userId, maxNumberOfLobbies = 1) => {
     if (!userId) {
       throw new Error('No user provided');
     }
     return Lobby
-      .count({creator: userId})
+      .count({ creator: userId })
       .then((number) => {
         if (number >= maxNumberOfLobbies) {
           throw new APIError('You have reached the maximum number of lobbies that you can create', null, 403);
@@ -54,17 +49,15 @@ export default {
       });
   },
 
-  userIsCreatorOfLobby: (userId, lobbyId) => {
-    return Lobby
-      .findOne({_id: lobbyId})
-      .then((lobby) => {
-        if (!lobby) {
-          throw new APIError('Lobby not found', null, 404);
-        }
-        if (lobby.creator.toString() != userId) {
-          throw new APIError('Only the owner of the lobby can delete it', null, 403);
-        }
-        return wrapInPromise(lobby);
-      });
-  },
+  userIsCreatorOfLobby: (userId, lobbyId) => Lobby
+    .findOne({ _id: lobbyId })
+    .then((lobby) => {
+      if (!lobby) {
+        throw new APIError('Lobby not found', null, 404);
+      }
+      if (lobby.creator.toString() !== userId) {
+        throw new APIError('Only the owner of the lobby can delete it', null, 403);
+      }
+      return wrapInPromise(lobby);
+    }),
 };

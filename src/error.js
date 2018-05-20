@@ -1,9 +1,8 @@
 export default class APIError {
-
   /**
    * Creates an error object to be consistent thoughout the api
-   * @param {string} message 
-   * @param {number} statusCode 
+   * @param {string} message
+   * @param {number} statusCode
    * @param {any} stack
    */
   constructor(message, stack = {}, statusCode = 500) {
@@ -17,10 +16,8 @@ export default class APIError {
     if (error instanceof APIError) {
       err = error;
     } else if (error && error instanceof Error) {
-      console.error('Native Error', error);
       err = new APIError(defaultMsg || error.message || 'Fatal Server Error', error.stack, error.status || 500);
     } else {
-      console.error('Unknown Error', error);
       err = new APIError(defaultMsg || 'Unknown error', error, 500);
     }
     if (status) {
@@ -33,34 +30,34 @@ export default class APIError {
     res.status(this.status);
     res.json({
       error: true,
-      message: this.message || this._translateStatus(),
+      message: this.message || this.translateStatus(),
       status: this.status,
-      stackTrace: this.stack
+      stackTrace: this.stack,
     });
   }
 
   throw() {
-    throw this;
+    throw Object(this);
   }
 
-  _translateStatus() {
+  translateStatus() {
     switch (this.status) {
       case 400:
-      return 'Bad Request';
+        return 'Bad Request';
       case 401:
-      return 'Unauthorized';
+        return 'Unauthorized';
       case 403:
-      return 'Forbidden';
+        return 'Forbidden';
       case 404:
-      return 'Not Found';
+        return 'Not Found';
       case 405:
-      return 'Method Not Allowed';
+        return 'Method Not Allowed';
       case 409:
-      return 'Conflict';
+        return 'Conflict';
       case 500:
-      return 'Unknown Fatal Error';
+        return 'Unknown Fatal Error';
       default:
-      return 'Unknow Error';
+        return 'Unknow Error';
     }
   }
 }

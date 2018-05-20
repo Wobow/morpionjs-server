@@ -1,14 +1,14 @@
 {
-  "extends": "eslint:recommended",
+  "extends": "airbnb",
   "parserOptions": {
-    "ecmaVersion": 7,
+    "ecmaVersion": 2017,
     "sourceType": "module"
   },
   "env": {
     "node": true
   },
   "rules": {
-    "no-console": 0,
-    "no-unused-vars": 1
+    "no-underscore-dangle": ["error", { "allow": ["_id"] }],
+    "no-bitwise": 0
   }
 }

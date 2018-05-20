@@ -4,7 +4,7 @@ import passportLocalMongoose from 'passport-local-mongoose';
 const userSchema = mongoose.Schema({
   username: {
     type: String,
-    unique: true
+    unique: true,
   },
   hash: String,
   salt: String,
@@ -16,7 +16,7 @@ const userSchema = mongoose.Schema({
 
 userSchema.plugin(passportLocalMongoose);
 
-userSchema.pre('update', function() {
+userSchema.pre('update', () => {
   this.modificationDate = Date.now();
 });
 export default mongoose.model('User', userSchema);

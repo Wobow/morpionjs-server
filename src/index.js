@@ -1,16 +1,16 @@
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
+import 'babel-polyfill';
+import passport from 'passport';
 import morgan from 'morgan';
 import bodyParser from 'body-parser';
 import initializeDb from './db';
 import middleware from './middleware';
 import api from './api';
 import config from './config';
-import passport from 'passport';
 import APIError from './error';
 import initializePassport from './passport-init';
-import 'babel-polyfill';
 import requestsQueueWorker from './workers/requests-queue.worker';
 import SocketHandler from './socket';
 
@@ -25,7 +25,7 @@ app.use(morgan('dev'));
 
 // 3rd party middleware
 app.use(cors({
-  exposedHeaders: config.corsHeaders, 
+  exposedHeaders: config.corsHeaders,
 }));
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -34,20 +34,18 @@ app.use(bodyParser.json());
 app.use(passport.initialize());
 initializePassport();
 initializeDb((db) => {
-  app.use(middleware({ config, db }));
+  app.use(middleware());
   app.use('/api', api({ config, db }));
 
-  app.use(function(error, req, res, next) {
+  app.use((error, req, res, next) => {
     APIError.from(error).send(res);
     next();
   });
 
   SocketHandler.start(app.server);
   requestsQueueWorker.process();
-  
-  app.server.listen(process.env.PORT || config.port, () => {
-    console.log(`Started on port ${app.server.address().port}`);
-  });
+
+  app.server.listen(process.env.PORT || config.port, () => {});
 });
 
 export default app;
