@@ -28,7 +28,7 @@ export const play = (game, move) => {
   const turnIndex = game.players.findIndex(p => game.turn.toString() === p.user.toString());
   let subGrid = 0;
   for (let i = 0; i < game.moves.length; i += 1) {
-    if (i % 2 === game.moves.length - 1) {
+    if (i % 2 === (game.moves.length % 2) - 1) {
       subGrid += game.moves[i];
     }
   }
