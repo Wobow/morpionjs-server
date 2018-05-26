@@ -26,8 +26,12 @@ export const play = (game, move) => {
   game.moves.push(move);
   gameToSave.grid |= move;
   const turnIndex = game.players.findIndex(p => game.turn.toString() === p.user.toString());
-  const subGrid = game.moves
-    .reduce((prev, cur, idx) => (idx % 2 === (game.moves.length - 1) % 2 ? prev + cur : prev));
+  let subGrid = 0;
+  for (let i = 0; i < game.moves.length; i += 1) {
+    if (i % 2 === game.moves.length - 1) {
+      subGrid += game.moves[i];
+    }
+  }
   if (WINNING_ROWS.find(r => (subGrid & r) === r)) {
     gameToSave.players[turnIndex].winner = true;
     gameToSave.winner = game.turn;
